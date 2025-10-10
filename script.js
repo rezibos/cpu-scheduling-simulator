@@ -1,5 +1,4 @@
 let procs = [];
-let nextPid = 1;
 let simulationSteps = [];
 let currentStepIndex = 0;
 
@@ -18,8 +17,6 @@ const elems = {
     result: document.getElementById('result'),
     ganttWrap: document.getElementById('ganttWrap'),
     outTable: document.querySelector('#outTable tbody'),
-    avgTAT: document.getElementById('avgTAT'),
-    avgWT: document.getElementById('avgWT'),
     procCount: document.getElementById('procCount'),
     stepVisualization: document.getElementById('stepVisualization'),
     prevStep: document.getElementById('prevStep'),
@@ -54,6 +51,9 @@ function refreshProcTable() {
     elems.procTableWrap.querySelector('.empty-state').style.display = 'none';
     elems.tableBody.innerHTML = '';
     
+    // Urutkan proses berdasarkan PID sebelum ditampilkan
+    procs.sort((a, b) => a.pid - b.pid);
+
     for (const p of procs) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -67,7 +67,6 @@ function refreshProcTable() {
                     <i class="fi fi-rr-trash"></i>
                 </button>
             </td>
-
         `;
         elems.tableBody.appendChild(tr);
     }
@@ -91,9 +90,12 @@ elems.addBtn.addEventListener('click', () => {
         return;
     }
 
-    procs.push({ pid: nextPid, arrival, burst });
-    showToast(`Proses P${nextPid} ditambahkan`);
-    nextPid++;
+    // Cari PID terbesar yang sudah ada
+    const maxPid = procs.reduce((max, p) => (p.pid > max ? p.pid : max), 0);
+    const newPid = maxPid + 1;
+
+    procs.push({ pid: newPid, arrival, burst });
+    showToast(`Proses P${newPid} ditambahkan`);
     refreshProcTable();
 });
 
@@ -104,7 +106,6 @@ elems.algo.addEventListener('change', () => {
 
 elems.clearAll.addEventListener('click', () => {
     procs = [];
-    nextPid = 1;
     refreshProcTable();
     elems.result.style.display = 'none';
     elems.stepVisualization.style.display = 'none';
@@ -207,9 +208,17 @@ function renderStepGanttChart(ganttData) {
         const block = document.createElement('div');
         block.className = 'gantt-block';
         block.style.width = width + '%';
-        block.style.background = getColor(seg.pid);
-        block.textContent = `P${seg.pid}`;
-        block.title = `P${seg.pid}: ${seg.start} → ${seg.end}`;
+        
+        if (seg.pid === 'idle') {
+            block.style.background = '#e2e8f0';
+            block.textContent = 'CPU Idle';
+            block.style.color = '#718096';
+        } else {
+            block.style.background = getColor(seg.pid);
+            block.textContent = `P${seg.pid}`;
+        }
+        
+        block.title = `P${seg.pid === 'idle' ? 'CPU Idle' : seg.pid}: ${seg.start} → ${seg.end}`;
         ganttChart.appendChild(block);
     }
     elems.stepGanttWrap.appendChild(ganttChart);
@@ -246,9 +255,17 @@ function renderResult(result) {
             const block = document.createElement('div');
             block.className = 'gantt-block';
             block.style.width = width + '%';
-            block.style.background = getColor(seg.pid);
-            block.textContent = `P${seg.pid}`;
-            block.title = `P${seg.pid}: ${seg.start} → ${seg.end}`;
+            
+            if (seg.pid === 'idle') {
+                block.style.background = '#e2e8f0';
+                block.textContent = 'CPU Idle';
+                block.style.color = '#718096';
+            } else {
+                block.style.background = getColor(seg.pid);
+                block.textContent = `P${seg.pid}`;
+            }
+            
+            block.title = `P${seg.pid === 'idle' ? 'CPU Idle' : seg.pid}: ${seg.start} → ${seg.end}`;
             ganttChart.appendChild(block);
         }
         elems.ganttWrap.appendChild(ganttChart);
@@ -267,9 +284,6 @@ function renderResult(result) {
         timeline.appendChild(lastTime);
         elems.ganttWrap.appendChild(timeline);
     }
-
-    elems.avgTAT.textContent = result.avgTAT.toFixed(2);
-    elems.avgWT.textContent = result.avgWT.toFixed(2);
 
     elems.outTable.innerHTML = '';
     for (const r of result.table) {
@@ -320,9 +334,7 @@ function buildTableFromDone(done) {
         tat: d.ct - d.arrival,
         wt: d.ct - d.arrival - d.burst
     }));
-    const avgTAT = table.reduce((s, t) => s + t.tat, 0) / table.length;
-    const avgWT = table.reduce((s, t) => s + t.wt, 0) / table.length;
-    return { table, avgTAT, avgWT };
+    return { table };
 }
 
 function simulateSRTF(arr) {
@@ -331,17 +343,34 @@ function simulateSRTF(arr) {
     let time = 0;
     const list = arr.map(x => ({ ...x, rem: x.burst }));
     
+    list.sort((a, b) => a.arrival - b.arrival || a.pid - b.pid);
+
+    if (list.length > 0 && list[0].arrival > 0) {
+        gantt.push({ pid: 'idle', start: 0, end: list[0].arrival });
+        steps.push({
+            time: 0,
+            currentProcess: null,
+            readyQueue: [],
+            ganttSoFar: [...gantt]
+        });
+        time = list[0].arrival;
+    }
+
     while (list.length) {
         const available = list.filter(p => p.arrival <= time);
         
         if (!available.length) {
-            time = Math.min(...list.map(p => p.arrival));
-            steps.push({
-                time: time,
-                currentProcess: null,
-                readyQueue: [],
-                ganttSoFar: [...gantt]
-            });
+            const nextArrival = Math.min(...list.map(p => p.arrival));
+            if (time < nextArrival) {
+                gantt.push({ pid: 'idle', start: time, end: nextArrival });
+                steps.push({
+                    time: time,
+                    currentProcess: null,
+                    readyQueue: [],
+                    ganttSoFar: [...gantt]
+                });
+                time = nextArrival;
+            }
             continue;
         }
         
@@ -354,29 +383,27 @@ function simulateSRTF(arr) {
             burst: arr.find(a => a.pid === x.pid).burst
         }));
         
-        steps.push({
-            time: time,
-            currentProcess: {
-                pid: p.pid,
-                remaining: p.rem,
-                burst: arr.find(x => x.pid === p.pid).burst
-            },
-            readyQueue: readyQueue,
-            ganttSoFar: [...gantt]
-        });
-        
+        if (steps.length === 0 || steps[steps.length - 1].time !== time) {
+             steps.push({
+                time: time,
+                currentProcess: {
+                    pid: p.pid,
+                    remaining: p.rem,
+                    burst: arr.find(x => x.pid === p.pid).burst
+                },
+                readyQueue: readyQueue,
+                ganttSoFar: [...gantt]
+            });
+        }
+       
         const nextArrival = Math.min(...list.filter(x => x.arrival > time).map(x => x.arrival), Infinity);
         const runTime = Math.min(p.rem, nextArrival - time);
         const start = time;
         time += runTime;
         p.rem -= runTime;
         
-        if (gantt.length && gantt[gantt.length - 1].pid === p.pid) {
-            gantt[gantt.length - 1].end = time;
-        } else {
-            gantt.push({ pid: p.pid, start, end: time });
-        }
-        
+        gantt.push({ pid: p.pid, start, end: time });
+
         if (p.rem <= 0) {
             list.splice(list.findIndex(x => x.pid === p.pid), 1);
             const orig = arr.find(x => x.pid === p.pid);
@@ -398,25 +425,41 @@ function simulateRR(arr, quantum) {
     const gantt = [], doneMap = new Map();
     const steps = [];
     const list = arr.map(x => ({ ...x, rem: x.burst }));
+    list.sort((a, b) => a.arrival - b.arrival || a.pid - b.pid);
     let time = 0;
     const queue = [];
-    
+
+    if (list.length > 0 && list[0].arrival > 0) {
+        gantt.push({ pid: 'idle', start: 0, end: list[0].arrival });
+        steps.push({
+            time: 0,
+            currentProcess: null,
+            readyQueue: [],
+            ganttSoFar: [...gantt]
+        });
+        time = list[0].arrival;
+    }
+
     while (true) {
         list.filter(p => p.arrival <= time && !queue.includes(p) && !doneMap.has(p.pid))
+            .sort((a,b) => a.arrival - b.arrival || a.pid - b.pid)
             .forEach(p => queue.push(p));
         
         if (!queue.length) {
             const remaining = list.filter(p => !doneMap.has(p.pid));
             if (!remaining.length) break;
-            time = Math.min(...remaining.map(p => p.arrival));
-            
-            steps.push({
-                time: time,
-                currentProcess: null,
-                readyQueue: [],
-                ganttSoFar: [...gantt]
-            });
-            continue;
+            const nextArrival = Math.min(...remaining.map(p => p.arrival));
+            if (time < nextArrival) {
+                gantt.push({ pid: 'idle', start: time, end: nextArrival });
+                steps.push({
+                    time: time,
+                    currentProcess: null,
+                    readyQueue: [],
+                    ganttSoFar: [...gantt]
+                });
+                time = nextArrival;
+                continue;
+            }
         }
         
         const p = queue.shift();
@@ -427,30 +470,28 @@ function simulateRR(arr, quantum) {
             burst: arr.find(a => a.pid === x.pid).burst
         }));
         
-        steps.push({
-            time: time,
-            currentProcess: {
-                pid: p.pid,
-                remaining: p.rem,
-                burst: arr.find(x => x.pid === p.pid).burst
-            },
-            readyQueue: readyQueue,
-            ganttSoFar: [...gantt]
-        });
+        if (steps.length === 0 || steps[steps.length - 1].time !== time) {
+            steps.push({
+                time: time,
+                currentProcess: {
+                    pid: p.pid,
+                    remaining: p.rem,
+                    burst: arr.find(x => x.pid === p.pid).burst
+                },
+                readyQueue: readyQueue,
+                ganttSoFar: [...gantt]
+            });
+        }
         
         const run = Math.min(quantum, p.rem);
-        const start = Math.max(time, p.arrival);
-        if (start > time) time = start;
+        const start = time;
         time += run;
         p.rem -= run;
         
-        if (gantt.length && gantt[gantt.length - 1].pid === p.pid) {
-            gantt[gantt.length - 1].end = time;
-        } else {
-            gantt.push({ pid: p.pid, start, end: time });
-        }
+        gantt.push({ pid: p.pid, start, end: time });
         
         list.filter(x => x.arrival > start && x.arrival <= time && !queue.includes(x) && !doneMap.has(x.pid))
+            .sort((a,b) => a.arrival - b.arrival || a.pid - b.pid)
             .forEach(x => queue.push(x));
         
         if (p.rem > 0) {

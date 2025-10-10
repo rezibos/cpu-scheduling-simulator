@@ -20,7 +20,7 @@
             <h2>Konfigurasi Simulasi</h2>
             <div class="controls-grid">
                 <div class="form-group">
-                    <label>Algoritma Penjadwalan</label>
+                    <label>Pilih Algoritma</label>
                     <select id="algo">
                         <option value="SRTF">SRTF (Shortest Remaining Time First)</option>
                         <option value="Round Robin">Round Robin</option>
@@ -45,11 +45,11 @@
             <h2>Tambah Proses</h2>
             <div class="controls-grid">
                 <div class="form-group">
-                    <label>Awal kedatangan</label>
+                    <label>Arrival Time (AT)</label>
                     <input id="arrival" type="number" value="0" min="0" placeholder="Waktu kedatangan">
                 </div>
                 <div class="form-group">
-                    <label>Jangka waktu</label>
+                    <label>Burst Time (BT)</label>
                     <input id="burst" type="number" value="4" min="1" placeholder="Waktu eksekusi">
                 </div>
             </div>
@@ -121,17 +121,6 @@
             <div class="gantt-container">
                 <h3 style="margin-bottom: 12px; color: #4a5568;">Gantt Chart</h3>
                 <div id="ganttWrap"></div>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-label">Average Turnaround Time</div>
-                    <div class="stat-value" id="avgTAT">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Average Waiting Time</div>
-                    <div class="stat-value" id="avgWT">0</div>
-                </div>
             </div>
 
             <h3 style="margin: 24px 0 12px; color: #4a5568;">Detail Proses</h3>

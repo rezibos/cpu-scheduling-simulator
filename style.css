@@ -77,12 +77,12 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
     margin-bottom: 20px;
-    align-items: start; /* penting: ratakan anak ke atas */
+    align-items: start;
 }
 
 .form-group {
     display: flex;
-    flex-direction: column; /* LABEL di atas INPUT */
+    flex-direction: column;
     align-items: flex-start;
     gap: 6px;
 }
@@ -96,7 +96,7 @@ body {
 
 input[type="number"],
 select {
-    width: 100%;           /* isi seluruh kolom */
+    width: 100%;
     box-sizing: border-box;
     padding: 10px 14px;
     border: 1px solid #ddd;
@@ -296,34 +296,8 @@ td:last-child {
     position: relative;
     text-align: left;
     padding-left: 2px;
-    font-weight: 700; /* angka bold */
-    color: #4a5568;   /* abu-abu medium */
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-top: 20px;
-}
-
-.stat-card {
-    padding: 20px;
-    background-color: #4a90e2;
-    border-radius: 12px;
-    color: white;
-    text-align: center;
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
-    margin-bottom: 8px;
-}
-
-.stat-value {
-    font-size: 2rem;
     font-weight: 700;
+    color: #4a5568;
 }
 
 .empty-state {
@@ -393,12 +367,6 @@ td:last-child {
     border: 2px solid #4a90e2;
     border-radius: 8px;
     margin-bottom: 20px;
-}
-
-.current-state h3 {
-    margin-top: 0;
-    color: #2d3748;
-    font-size: 1.2rem;
 }
 
 .process-info {
