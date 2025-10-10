@@ -404,11 +404,11 @@ td:last-child {
     display: flex;
     justify-content: space-around;
     align-items: center;
-    margin-top: 24px; /* Ubah margin ini sesuai keinginan, atau biarkan seperti sebelumnya */
+    margin-top: 24px;
     padding: 16px;
-    background-color: #edf2f7; /* Ubah warna background */
+    background-color: #f7fafc;
     border-radius: 8px;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: #a0aec0;
 }
