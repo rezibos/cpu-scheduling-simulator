@@ -104,6 +104,10 @@ elems.algo.addEventListener('change', () => {
 elems.clearAll.addEventListener('click', () => {
     procs = [];
     nextPid = 1;
+    // Mereset dropdown "Pilih Algoritma" kembali ke opsi default
+    elems.algo.value = ""; 
+    // Menyembunyikan input Time Quantum jika bukan Round Robin yang dipilih
+    elems.quantumWrap.style.display = 'none';
     refreshProcTable();
     elems.result.style.display = 'none';
     elems.stepVisualization.style.display = 'none';

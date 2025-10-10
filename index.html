@@ -10,9 +10,12 @@
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-straight/css/uicons-solid-straight.css'>
 </head>
 <body>
+    <div class="logo-header">
+        <img src="asset/logo.png" alt="Logo UMRAH" class="logo">
+    </div>
     <div class="container">
         <div class="header">
-            <h1>⚙️ CPU Scheduling Simulator</h1>
+            <h1>CPU Scheduling Simulator</h1>
             <p>Simulasi algoritma penjadwalan CPU dengan visualisasi interaktif</p>
         </div>
 
@@ -22,6 +25,7 @@
                 <div class="form-group">
                     <label class="label-algo">Pilih Algoritma</label>
                     <select id="algo">
+                        <option value="" selected disabled>PILIH ALGORITMA</option>
                         <option value="SRTF">SRTF (Shortest Remaining Time First)</option>
                         <option value="Round Robin">Round Robin</option>
                     </select>
