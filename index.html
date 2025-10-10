@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CPU Scheduling Simulator</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-bold-rounded/css/uicons-bold-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-straight/css/uicons-solid-straight.css'>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ CPU Scheduling Simulator</h1>
+            <p>Simulasi algoritma penjadwalan CPU dengan visualisasi interaktif</p>
+        </div>
+
+        <div class="card">
+            <h2>Konfigurasi Simulasi</h2>
+            <div class="controls-grid">
+                <div class="form-group">
+                    <label>Algoritma Penjadwalan</label>
+                    <select id="algo">
+                        <option value="SRTF">SRTF (Shortest Remaining Time First)</option>
+                        <option value="Round Robin">Round Robin</option>
+                    </select>
+                </div>
+                <div class="form-group" id="quantumWrap" style="display:none">
+                    <label>Time Quantum</label>
+                    <input id="quantum" type="number" value="2" min="1">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button id="simulate" class="btn-primary">
+                    <i class="fi fi-br-play"></i> Jalankan Simulasi
+                </button>
+                <button id="clearAll" class="btn-danger">
+                    <i class="fi fi-rr-trash"></i> Hapus Semua
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Tambah Proses</h2>
+            <div class="controls-grid">
+                <div class="form-group">
+                    <label>Awal kedatangan</label>
+                    <input id="arrival" type="number" value="0" min="0" placeholder="Waktu kedatangan">
+                </div>
+                <div class="form-group">
+                    <label>Jangka waktu</label>
+                    <input id="burst" type="number" value="4" min="1" placeholder="Waktu eksekusi">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button id="addProc" class="btn-success">
+                    <i class="fi fi-br-plus"></i> Tambah Proses
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Daftar Proses <span class="badge" id="procCount">0 proses</span></h2>
+            <div id="procTableWrap">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <p>Belum ada proses.</p>
+                </div>
+            </div>
+            <table id="procTable" style="display:none">
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th>Arrival Time</th>
+                        <th>Burst Time</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="stepVisualization" class="card" style="display:none">
+            <h2>Visualisasi Step-by-Step</h2>
+            
+            <div class="step-controls">
+                <button id="prevStep" class="btn-secondary">
+                    <i class="fi fi-ss-left"></i> Sebelum
+                </button>
+                <div class="step-info">
+                    <span id="currentStep">Step 1</span> / <span id="totalSteps">10</span>
+                </div>
+                <button id="nextStep" class="btn-secondary">
+                    Selanjutnya <i class="fi fi-ss-right"></i>
+                </button>
+            </div>
+
+            <div class="step-content">
+                <div class="current-state">
+                    <h3>Status Saat Ini (Time: <span id="currentTime">0</span>)</h3>
+                    <div id="currentProcess" class="process-info"></div>
+                    <div id="readyQueue" class="queue-info"></div>
+                </div>
+
+                <div class="gantt-container">
+                    <h3>Gantt Chart Progress</h3>
+                    <div id="stepGanttWrap"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result" class="card" style="display:none">
+            <h2>Hasil Simulasi Final</h2>
+            
+            <div class="gantt-container">
+                <h3 style="margin-bottom: 12px; color: #4a5568;">Gantt Chart</h3>
+                <div id="ganttWrap"></div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Average Turnaround Time</div>
+                    <div class="stat-value" id="avgTAT">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Average Waiting Time</div>
+                    <div class="stat-value" id="avgWT">0</div>
+                </div>
+            </div>
+
+            <h3 style="margin: 24px 0 12px; color: #4a5568;">Detail Proses</h3>
+            <table id="outTable">
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th>Arrival</th>
+                        <th>Burst</th>
+                        <th>Completion</th>
+                        <th>TAT</th>
+                        <th>WT</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
