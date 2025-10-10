@@ -123,20 +123,31 @@
                 <div id="ganttWrap"></div>
             </div>
 
-            <h3 style="margin: 24px 0 12px; color: #4a5568;">Detail Proses</h3>
-            <table id="outTable">
-                <thead>
-                    <tr>
-                        <th>PID</th>
-                        <th>Arrival</th>
-                        <th>Burst</th>
-                        <th>Completion</th>
-                        <th>TAT</th>
-                        <th>WT</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <div class="gantt-container">
+                <h3 style="margin: 24px 0 12px; color: #4a5568;">Detail Proses</h3>
+                <table id="outTable">
+                    <thead>
+                        <tr>
+                            <th>PID</th>
+                            <th>Arrival</th>
+                            <th>Burst</th>
+                            <th>Completion</th>
+                            <th>TAT</th>
+                            <th>WT</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="average-results" class="average-results">
+                    <div class="average-item">
+                        <p>Rata-rata Turnaround Time = <span id="avgTAT">...</span></p>
+                    </div>
+                    <div class="average-item">
+                        <p>Rata-rata Waiting Time = <span id="avgWT">...</span></p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 

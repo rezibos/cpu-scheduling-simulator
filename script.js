@@ -1,4 +1,5 @@
 let procs = [];
+let nextPid = 1;
 let simulationSteps = [];
 let currentStepIndex = 0;
 
@@ -26,7 +27,9 @@ const elems = {
     currentTime: document.getElementById('currentTime'),
     currentProcess: document.getElementById('currentProcess'),
     readyQueue: document.getElementById('readyQueue'),
-    stepGanttWrap: document.getElementById('stepGanttWrap')
+    stepGanttWrap: document.getElementById('stepGanttWrap'),
+    avgTAT: document.getElementById('avgTAT'),
+    avgWT: document.getElementById('avgWT')
 };
 
 function showToast(message) {
@@ -51,9 +54,6 @@ function refreshProcTable() {
     elems.procTableWrap.querySelector('.empty-state').style.display = 'none';
     elems.tableBody.innerHTML = '';
     
-    // Urutkan proses berdasarkan PID sebelum ditampilkan
-    procs.sort((a, b) => a.pid - b.pid);
-
     for (const p of procs) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -90,12 +90,9 @@ elems.addBtn.addEventListener('click', () => {
         return;
     }
 
-    // Cari PID terbesar yang sudah ada
-    const maxPid = procs.reduce((max, p) => (p.pid > max ? p.pid : max), 0);
-    const newPid = maxPid + 1;
-
-    procs.push({ pid: newPid, arrival, burst });
-    showToast(`Proses P${newPid} ditambahkan`);
+    procs.push({ pid: nextPid, arrival, burst });
+    showToast(`Proses P${nextPid} ditambahkan`);
+    nextPid++;
     refreshProcTable();
 });
 
@@ -106,6 +103,7 @@ elems.algo.addEventListener('change', () => {
 
 elems.clearAll.addEventListener('click', () => {
     procs = [];
+    nextPid = 1;
     refreshProcTable();
     elems.result.style.display = 'none';
     elems.stepVisualization.style.display = 'none';
@@ -286,6 +284,9 @@ function renderResult(result) {
     }
 
     elems.outTable.innerHTML = '';
+    let totalTAT = 0;
+    let totalWT = 0;
+    
     for (const r of result.table) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -297,7 +298,14 @@ function renderResult(result) {
             <td>${r.wt}</td>
         `;
         elems.outTable.appendChild(tr);
+        totalTAT += r.tat;
+        totalWT += r.wt;
     }
+
+    const avgTAT = (totalTAT / result.table.length).toFixed(2);
+    const avgWT = (totalWT / result.table.length).toFixed(2);
+    elems.avgTAT.textContent = avgTAT;
+    elems.avgWT.textContent = avgWT;
 }
 
 function getColor(pid) {
@@ -402,6 +410,7 @@ function simulateSRTF(arr) {
         time += runTime;
         p.rem -= runTime;
         
+        // Perbaikan di sini, pastikan tidak menggabungkan blok
         gantt.push({ pid: p.pid, start, end: time });
 
         if (p.rem <= 0) {
@@ -488,6 +497,7 @@ function simulateRR(arr, quantum) {
         time += run;
         p.rem -= run;
         
+        // Bagian ini sudah benar, akan selalu menambahkan blok baru
         gantt.push({ pid: p.pid, start, end: time });
         
         list.filter(x => x.arrival > start && x.arrival <= time && !queue.includes(x) && !doneMap.has(x.pid))
