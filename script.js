@@ -32,12 +32,42 @@ const elems = {
     avgWT: document.getElementById('avgWT')
 };
 
-function showToast(message) {
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+// Konfigurasi SweetAlert2 default
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'bottom-right',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer)
+        toast.addEventListener('mouseleave', Swal.resumeTimer)
+    }
+});
+
+function showToast(message, icon = 'info') {
+    Toast.fire({
+        icon: icon,
+        title: message
+    });
+}
+
+function showAlert(title, text, icon = 'info') {
+    Swal.fire({
+        title: title,
+        text: text,
+        icon: icon,
+        confirmButtonColor: '#4a90e2',
+        confirmButtonText: 'OK'
+    });
+}
+
+function reindexPids() {
+    procs.sort((a, b) => a.pid - b.pid);
+    procs.forEach((p, idx) => {
+        p.pid = idx + 1;
+    });
+    nextPid = procs.length + 1;
 }
 
 function refreshProcTable() {
@@ -75,8 +105,9 @@ function refreshProcTable() {
         b.addEventListener('click', () => {
             const pid = Number(b.getAttribute('data-pid'));
             procs = procs.filter(x => x.pid !== pid);
+            reindexPids();
             refreshProcTable();
-            showToast(`Proses P${pid} dihapus`);
+            showToast(`Proses P${pid} dihapus`, 'success');
         });
     });
 }
@@ -86,12 +117,12 @@ elems.addBtn.addEventListener('click', () => {
     const burst = Number(elems.burst.value);
     
     if (burst <= 0) {
-        showToast('Burst time harus lebih dari 0');
+        showToast('Burst time harus lebih dari 0', 'error');
         return;
     }
 
     procs.push({ pid: nextPid, arrival, burst });
-    showToast(`Proses P${nextPid} ditambahkan`);
+    showToast(`Proses P${nextPid} ditambahkan`, 'success');
     nextPid++;
     refreshProcTable();
 });
@@ -102,21 +133,37 @@ elems.algo.addEventListener('change', () => {
 });
 
 elems.clearAll.addEventListener('click', () => {
-    procs = [];
-    nextPid = 1;
-    // Mereset dropdown "Pilih Algoritma" kembali ke opsi default
-    elems.algo.value = ""; 
-    // Menyembunyikan input Time Quantum jika bukan Round Robin yang dipilih
-    elems.quantumWrap.style.display = 'none';
-    refreshProcTable();
-    elems.result.style.display = 'none';
-    elems.stepVisualization.style.display = 'none';
-    showToast('Semua proses dihapus');
+    Swal.fire({
+        title: 'Hapus Semua Proses?',
+        text: 'Tindakan ini tidak dapat dibatalkan',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e25858',
+        cancelButtonColor: '#4a90e2',
+        confirmButtonText: 'Hapus',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            procs = [];
+            nextPid = 1;
+            elems.algo.value = "";
+            elems.quantumWrap.style.display = 'none';
+            refreshProcTable();
+            elems.result.style.display = 'none';
+            elems.stepVisualization.style.display = 'none';
+            showToast('Semua proses dihapus', 'success');
+        }
+    });
 });
 
 elems.simulate.addEventListener('click', () => {
     if (procs.length === 0) {
-        showToast('Tambahkan proses terlebih dahulu');
+        showToast('Tambahkan proses terlebih dahulu', 'warning');
+        return;
+    }
+
+    if (!elems.algo.value) {
+        showToast('Pilih algoritma terlebih dahulu', 'warning');
         return;
     }
 
@@ -133,7 +180,7 @@ elems.simulate.addEventListener('click', () => {
     elems.stepVisualization.style.display = 'block';
     elems.stepVisualization.scrollIntoView({ behavior: 'smooth' });
     
-    showToast('Simulasi selesai!');
+    showToast('Simulasi selesai!', 'success');
 });
 
 elems.prevStep.addEventListener('click', () => {
@@ -357,14 +404,7 @@ function simulateSRTF(arr) {
     
     list.sort((a, b) => a.arrival - b.arrival || a.pid - b.pid);
 
-    if (list.length > 0 && list[0].arrival > 0) {
-        gantt.push({ pid: 'idle', start: 0, end: list[0].arrival });
-        steps.push({
-            time: 0,
-            currentProcess: null,
-            readyQueue: [],
-            ganttSoFar: [...gantt]
-        });
+    if (list.length > 0) {
         time = list[0].arrival;
     }
 
@@ -396,7 +436,7 @@ function simulateSRTF(arr) {
         }));
         
         if (steps.length === 0 || steps[steps.length - 1].time !== time) {
-             steps.push({
+            steps.push({
                 time: time,
                 currentProcess: {
                     pid: p.pid,
@@ -407,14 +447,13 @@ function simulateSRTF(arr) {
                 ganttSoFar: [...gantt]
             });
         }
-       
+
         const nextArrival = Math.min(...list.filter(x => x.arrival > time).map(x => x.arrival), Infinity);
         const runTime = Math.min(p.rem, nextArrival - time);
         const start = time;
         time += runTime;
         p.rem -= runTime;
         
-        // Perbaikan di sini, pastikan tidak menggabungkan blok
         gantt.push({ pid: p.pid, start, end: time });
 
         if (p.rem <= 0) {
@@ -439,19 +478,9 @@ function simulateRR(arr, quantum) {
     const steps = [];
     const list = arr.map(x => ({ ...x, rem: x.burst }));
     list.sort((a, b) => a.arrival - b.arrival || a.pid - b.pid);
-    let time = 0;
+    
+    let time = list.length > 0 ? list[0].arrival : 0;
     const queue = [];
-
-    if (list.length > 0 && list[0].arrival > 0) {
-        gantt.push({ pid: 'idle', start: 0, end: list[0].arrival });
-        steps.push({
-            time: 0,
-            currentProcess: null,
-            readyQueue: [],
-            ganttSoFar: [...gantt]
-        });
-        time = list[0].arrival;
-    }
 
     while (true) {
         list.filter(p => p.arrival <= time && !queue.includes(p) && !doneMap.has(p.pid))
@@ -501,7 +530,6 @@ function simulateRR(arr, quantum) {
         time += run;
         p.rem -= run;
         
-        // Bagian ini sudah benar, akan selalu menambahkan blok baru
         gantt.push({ pid: p.pid, start, end: time });
         
         list.filter(x => x.arrival > start && x.arrival <= time && !queue.includes(x) && !doneMap.has(x.pid))
